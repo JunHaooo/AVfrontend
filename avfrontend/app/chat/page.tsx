@@ -2,25 +2,55 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { ArrowLeft, SendHorizonal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 
-export default function ChatPage() {
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([])
-  const [input, setInput] = useState('')
+// Define a type for messages
+type Message = { role: 'user' | 'assistant'; text: string }
 
-  const handleSubmit = (e: React.FormEvent) => {
+export default function ChatPage() {
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    setMessages((prev) => [...prev, { role: 'user', text: input }])
+
+    // Add user's message
+    const newMessage: Message = { role: 'user', text: input }
+    const newMessages = [...messages, newMessage]
+    setMessages(newMessages)
     setInput('')
-    // Simulate AI response
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: 'ai', text: '🤖 This is an AI response!' }])
-    }, 800)
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      })
+
+      const data = await res.json()
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        text: data.reply ?? 'No response from Gemini',
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+    } catch (err) {
+      console.error(err)
+      const errorMessage: Message = {
+        role: 'assistant',
+        text: '⚠️ Error fetching response.',
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -33,27 +63,22 @@ export default function ChatPage() {
             <span className="sr-only">Back to Home</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">Chat with AI</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Chat with Gemini</h1>
       </div>
 
-      {/* Chat Area */}
+      {/* Chat */}
       <Card className="flex-1 flex flex-col overflow-hidden rounded-2xl shadow-md backdrop-blur-sm bg-white/70 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50">
         <CardContent className="flex-1 p-4 overflow-y-auto space-y-3">
           {messages.length === 0 ? (
             <p className="text-center text-slate-400 mt-10">Start the conversation below 💬</p>
           ) : (
             messages.map((msg, i) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className={`flex ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs px-4 py-2 rounded-2xl shadow-sm text-sm ${
+                  className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white rounded-br-none'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-bl-none'
@@ -61,13 +86,14 @@ export default function ChatPage() {
                 >
                   {msg.text}
                 </div>
-              </motion.div>
+              </div>
             ))
           )}
+          {loading && <div className="text-slate-400 text-sm italic">Gemini is thinking...</div>}
         </CardContent>
       </Card>
 
-      {/* Input Bar */}
+      {/* Input */}
       <form
         onSubmit={handleSubmit}
         className="mt-4 flex items-center gap-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm px-3 py-2"
@@ -77,12 +103,14 @@ export default function ChatPage() {
           placeholder="Ask anything..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={loading}
           className="flex-1 border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent text-slate-900 dark:text-slate-100"
         />
         <Button
           type="submit"
           size="icon"
           className="rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={loading}
         >
           <SendHorizonal className="h-4 w-4" />
         </Button>
