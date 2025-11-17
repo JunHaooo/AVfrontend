@@ -1,74 +1,59 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from 'next/server'
+import axios from 'axios'
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const { url } = await req.json()
+    const { url } = await request.json()
 
-    if (!url || !/^https?:\/\//.test(url)) {
-      return NextResponse.json({ error: "Invalid URL" }, { status: 400 })
+    if (!url) {
+      return NextResponse.json({ message: 'URL is required' }, { status: 400 })
     }
 
-    // Try fetching the article HTML
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
+    const apiKey = process.env.SCRAPINGBEE_API_KEY
+    if (!apiKey) {
+      throw new Error('ScrapingBee API key is not configured in .env.local')
+    }
+
+    // Use a proxy/scraper service to avoid being blocked
+    const response = await axios.get('https://app.scrapingbee.com/api/v1/', {
+      params: {
+        api_key: apiKey,
+        url: url,
+        render_js: true, // Tell ScrapingBee to run a full browser to render JavaScript
+        // Pass extract_rules as a stringified JSON object. Axios will handle encoding.
+        extract_rules: JSON.stringify({
+          "title": "title",
+          "snippet": "meta[name='description']@content",
+          "image": "meta[property='og:image']@content",
+        }),
       },
-      next: { revalidate: 0 },
-    })
+    });
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch URL (${res.status})` },
-        { status: res.status }
-      )
+    // The data from ScrapingBee is already a JSON object with the extracted fields
+    const extractedData = response.data
+
+    // Construct the final Article object
+    const articleData = {
+      id: new Date().toISOString(),
+      title: extractedData.title || 'No title found',
+      snippet: extractedData.snippet || 'No snippet available.',
+      image: extractedData.image || null,
+      source_domain: new URL(url).hostname,
+      published_date: new Date().toISOString(), // Placeholder, real date extraction is more complex
+      url: url,
     }
 
-    const html = await res.text()
-
-    // 🧠 Extract <title>, <meta name="description">, etc.
-    const titleMatch = html.match(/<title>(.*?)<\/title>/i)
-    const title = titleMatch ? titleMatch[1].trim() : "Untitled"
-
-    const descMatch = html.match(
-      /<meta\s+(?:name|property)=["']description["']\s+content=["']([^"']+)["']/i
-    )
-    const description = descMatch ? descMatch[1].trim() : ""
-
-    const imageMatch = html.match(
-      /<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i
-    )
-    const image = imageMatch ? imageMatch[1].trim() : ""
-
-    const publishedMatch = html.match(
-      /<meta\s+(?:property|name)=["']article:published_time["']\s+content=["']([^"']+)["']/i
-    )
-    const published_date = publishedMatch
-      ? publishedMatch[1]
-      : new Date().toISOString()
-
-    const domain = new URL(url).hostname
-
-    const data = {
-      title,
-      snippet: description,
-      image,
-      url,
-      source_domain: domain,
-      published_date,
-      category: "General",
-      geographic_region: "Unknown",
-      relevance_score: "0.9",
+    return NextResponse.json(articleData)
+  } catch (error) {
+    // Improved error logging to show the actual response from the failed request
+    if (axios.isAxiosError(error)) {
+      console.error('Axios Error Details:', error.response?.data);
+      const apiMessage = error.response?.data?.message || error.message;
+      return NextResponse.json({ message: apiMessage }, { status: error.response?.status || 500 });
     }
 
-    return NextResponse.json(data)
-  } catch (error: any) {
-    console.error("Error extracting article:", error)
-    return NextResponse.json(
-      { error: "Failed to extract article" },
-      { status: 500 }
-    )
+    console.error('Generic API Error:', error);
+    const message = error instanceof Error ? error.message : 'An internal server error occurred';
+    return NextResponse.json({ message }, { status: 500 })
   }
 }
-
-

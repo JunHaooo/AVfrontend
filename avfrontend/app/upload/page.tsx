@@ -30,7 +30,14 @@ async function fetchArticleData(url: string): Promise<Article> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   })
-  if (!res.ok) throw new Error('Extraction failed')
+  if (!res.ok) {
+    let message = 'Extraction failed'
+    try {
+      const errorBody = await res.json()
+      message = errorBody.message || `API returned status ${res.status}`
+    } catch (e) { /* Ignore JSON parsing errors */ }
+    throw new Error(message)
+  }
   return res.json()
 }
 
@@ -54,8 +61,12 @@ export default function UploadPage() {
       setArticle(data)
       toast.success('Article extracted')
     } catch (err) {
-      console.error(err)
-      toast.error('Failed to extract article — check console for details')
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
+      console.error('Extraction Error:', err)
+      toast.error('Failed to extract article', {
+        description: errorMessage,
+        duration: 6000,
+      })
     } finally {
       setLoading(false)
     }
