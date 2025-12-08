@@ -1,26 +1,38 @@
 // app/api/chat/route.ts
 import { NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json()
 
     if (!messages || messages.length === 0) {
-      return NextResponse.json({ reply: 'No messages provided' })
+      return NextResponse.json(
+        { reply: 'No messages provided' },
+        { status: 400 }
+      )
     }
 
-    const model = genAI.getGenerativeModel({ model: 'text-bison-001' })
+    // Transform messages for DeepSeek/OpenAI compatible API
+    const formattedMessages = messages.map((m: { role: string; text: string }) => ({
+        role: m.role === 'AI' ? 'assistant' : m.role,
+        content: m.text,
+    }));
 
-    // Combine messages into a single prompt string
-    const prompt = messages
-      .map((m: any) => `${m.role === 'user' ? 'User' : 'AI'}: ${m.text}`)
-      .join('\n')
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: formattedMessages,
+      }),
+    })
 
-    const result = await model.generateContent(prompt)
-    const reply = result.response?.text() || 'No response from Gemini'
+    const data = await response.json()
+    const reply =
+      data.choices?.[0]?.message?.content || 'No response from DeepSeek'
 
     return NextResponse.json({ reply })
   } catch (err: any) {

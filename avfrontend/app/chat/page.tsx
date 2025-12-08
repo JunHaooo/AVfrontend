@@ -37,7 +37,7 @@ export default function ChatPage() {
 
       const assistantMessage: Message = {
         role: 'assistant',
-        text: data.reply ?? 'No response from Gemini',
+        text: data.reply ?? 'No response from DeepSeek',
       }
 
       setMessages((prev) => [...prev, assistantMessage])
@@ -63,7 +63,7 @@ export default function ChatPage() {
             <span className="sr-only">Back to Home</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight">Chat with Gemini</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Chat with DeepSeek</h1>
       </div>
 
       {/* Chat */}
@@ -89,7 +89,7 @@ export default function ChatPage() {
               </div>
             ))
           )}
-          {loading && <div className="text-slate-400 text-sm italic">Gemini is thinking...</div>}
+          {loading && <div className="text-slate-400 text-sm italic">DeepSeek is thinking...</div>}
         </CardContent>
       </Card>
 
