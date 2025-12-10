@@ -41,6 +41,20 @@ async function fetchArticleData(url: string): Promise<Article> {
   return res.json()
 }
 
+async function saveArticle(article: Article) {
+  const res = await fetch("/api/articles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(article),
+  })
+
+  if (!res.ok) {
+    const body = await res.json()
+    throw new Error(body.message || "Failed to save article")
+  }
+}
+
+
 export default function UploadPage() {
   const [url, setUrl] = useState('')
   const [article, setArticle] = useState<Article | null>(null)
@@ -59,16 +73,22 @@ export default function UploadPage() {
     try {
       const data = await fetchArticleData(url.trim())
       setArticle(data)
-      toast.success('Article extracted')
+
+      await saveArticle(data)
+
+      toast.success("Article extracted and saved to database")
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred'
-      console.error('Extraction Error:', err)
-      toast.error('Failed to extract article', {
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error"
+
+      console.error("Extraction Error:", err)
+
+      toast.error("Failed to process article", {
         description: errorMessage,
         duration: 6000,
       })
     } finally {
-      setLoading(false)
+    setLoading(false)
     }
   }
 

@@ -35,10 +35,14 @@ export async function POST(req: Request) {
       data.choices?.[0]?.message?.content || 'No response from DeepSeek'
 
     return NextResponse.json({ reply })
-  } catch (err: any) {
+  } catch (err) {
     console.error('API error:', err)
+    let errorMessage = 'An unknown error occurred'
+    if (err instanceof Error) {
+      errorMessage = err.message
+    }
     return NextResponse.json(
-      { reply: '⚠️ Error getting response', error: err.message },
+      { reply: '⚠️ Error getting response', error: errorMessage },
       { status: 500 }
     )
   }

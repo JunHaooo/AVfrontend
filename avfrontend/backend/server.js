@@ -10,7 +10,7 @@ const client = new MongoClient("mongodb://localhost:27017"); // Local MongoDB
 await client.connect();
 
 const db = client.db("AVnews");
-const collection = db.collection("news_queries");
+const collection = db.collection("articles");
 
 // Simple API to get all news queries
 app.get("/api/news", async (req, res) => {

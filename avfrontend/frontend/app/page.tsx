@@ -1,57 +1,84 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
+
+/* =========================
+   Types
+========================= */
+
+type NewsItem = {
+  id: string
+  title: string
+  snippet: string
+  category: string
+  published_date: string
+  url: string
+  image?: string | null
+}
+
+/* =========================
+   Component
+========================= */
 
 export default function Home() {
-  const [query, setQuery] = useState("")
-  const [category, setCategory] = useState("All")
-  const [results, setResults] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [query, setQuery] = useState<string>("")
+  const [category, setCategory] = useState<string>("All")
+  const [results, setResults] = useState<NewsItem[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
 
   const categories = ["All", "Technology", "Policy", "Science"]
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     setLoading(true)
 
     try {
-      // Fetch data from backend
       const res = await fetch("http://localhost:3001/api/news")
-      const data = await res.json()
 
-      // Flatten results array from each document
-      const allResults = data // no .map().flat() because your docs are already individual news items
+      if (!res.ok) {
+        throw new Error("Failed to fetch news")
+      }
 
-    const filtered = allResults.filter((item: any) => {
-      if (!item?.title || !item?.snippet) return false
+      const data: NewsItem[] = await res.json()
 
-      const matchesQuery =
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        item.snippet.toLowerCase().includes(query.toLowerCase())
+      const filtered = data.filter((item) => {
+        if (!item.title || !item.snippet) return false
 
-      const matchesCategory = category === "All" || item.category === category
+        const matchesQuery =
+          item.title.toLowerCase().includes(query.toLowerCase()) ||
+          item.snippet.toLowerCase().includes(query.toLowerCase())
 
-      return matchesQuery && matchesCategory
-    })
+        const matchesCategory =
+          category === "All" || item.category === category
 
-    setResults(filtered)
-    } catch (err) {
-      console.error("Error fetching news:", err)
+        return matchesQuery && matchesCategory
+      })
+
+      setResults(filtered)
+    } catch (error) {
+      console.error("Error fetching news:", error)
       setResults([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [query, category])
 
   useEffect(() => {
     handleSearch()
-  }, [query, category])
+  }, [handleSearch])
 
   const formatDate = (iso: string) =>
     new Date(iso).toISOString().slice(0, 16).replace("T", " ")
@@ -60,7 +87,7 @@ export default function Home() {
     <div className="min-h-screen p-8 flex flex-col items-center bg-background">
       <h1 className="text-3xl font-bold mb-6">Latest News</h1>
 
-      {/* Search controls */}
+      {/* Search Controls */}
       <div className="flex gap-2 mb-8 w-full max-w-3xl">
         <input
           type="text"
