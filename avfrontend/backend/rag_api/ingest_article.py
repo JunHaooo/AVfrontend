@@ -1,3 +1,4 @@
+# Initializes the ChromaDB collection and defines logic to embed and store article content for retrieval.
 from chromadb.utils import embedding_functions
 import chromadb
 

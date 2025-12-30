@@ -1,3 +1,4 @@
+#Handles article ingestion requests and forwards article data to the ingestion pipeline.
 from fastapi import APIRouter
 from ingest_article import ingest_article
 
