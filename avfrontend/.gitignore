@@ -41,3 +41,14 @@ coverage/
 # typescript
 **/*.tsbuildinfo
 **/next-env.d.ts
+
+# Python virtual environment
+backend/venv/
+
+# RAG API / Python
+backend/rag_api/__pycache__/
+backend/rag_api/chroma/
+backend/rag_api/.env
+
+# RAG test / Chroma database
+backend/rag_test/

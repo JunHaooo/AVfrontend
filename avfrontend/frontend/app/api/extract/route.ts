@@ -25,6 +25,11 @@ export async function POST(request: Request) {
           "title": "title",
           "snippet": "meta[name='description']@content",
           "image": "meta[property='og:image']@content",
+
+          full_text: {
+            selector: "article",
+            output: "text",
+          },
         }),
       },
     });
@@ -38,6 +43,7 @@ export async function POST(request: Request) {
       title: extractedData.title || 'No title found',
       snippet: extractedData.snippet || 'No snippet available.',
       image: extractedData.image || null,
+      full_text: extractedData.full_text || null, 
       source_domain: new URL(url).hostname,
       published_date: new Date().toISOString(), // Placeholder, real date extraction is more complex
       url: url,

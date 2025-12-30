@@ -6,31 +6,37 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    await connectMongo()
-
-    const existing = await Article.findOne({ url: body.url })
-    if (existing) {
+    if (!body.url) {
       return NextResponse.json(
-        { message: "Article already exists" },
-        { status: 409 }
+        { message: "URL is required" },
+        { status: 400 }
       )
     }
 
-    const article = await Article.create({
-      title: body.title,
-      url: body.url,
-      snippet: body.snippet,
-      source_domain: body.source_domain,
-      published_date: body.published_date
-        ? new Date(body.published_date)
-        : null,
-      category: body.category,
-      geographic_region: body.geographic_region,
-      relevance_score: body.relevance_score,
-      image: body.image,
-    })
+    await connectMongo()
 
-    return NextResponse.json(article, { status: 201 })
+    const article = await Article.findOneAndUpdate(
+      { url: body.url }, // 🔑 unique key
+      {
+        title: body.title,
+        snippet: body.snippet,
+        source_domain: body.source_domain,
+        published_date: body.published_date
+          ? new Date(body.published_date)
+          : null,
+        category: body.category,
+        geographic_region: body.geographic_region,
+        relevance_score: body.relevance_score,
+        image: body.image,
+        full_text: body.full_text, // ✅ IMPORTANT
+      },
+      {
+        upsert: true, // create if not exists
+        new: true,    // return updated doc
+      }
+    )
+
+    return NextResponse.json(article, { status: 200 })
   } catch (error) {
     console.error("Save article error:", error)
     return NextResponse.json(

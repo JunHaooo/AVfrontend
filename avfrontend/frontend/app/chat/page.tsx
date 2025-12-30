@@ -27,17 +27,18 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      // Call FastAPI RAG backend
+      const res = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ question: input }),
       })
 
       const data = await res.json()
 
       const assistantMessage: Message = {
         role: 'assistant',
-        text: data.reply ?? 'No response from DeepSeek',
+        text: data.answer ?? 'No response from RAG backend',
       }
 
       setMessages((prev) => [...prev, assistantMessage])

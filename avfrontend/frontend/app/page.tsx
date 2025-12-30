@@ -21,7 +21,7 @@ import {
 ========================= */
 
 type NewsItem = {
-  id: string
+  _id: string
   title: string
   snippet: string
   category: string
@@ -145,7 +145,7 @@ export default function Home() {
               )
               .map((news) => (
                 <a
-                  key={news.id}
+                  key={news._id}
                   href={news.url}
                   target="_blank"
                   rel="noopener noreferrer"

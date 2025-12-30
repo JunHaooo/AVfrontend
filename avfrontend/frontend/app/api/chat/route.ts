@@ -12,35 +12,30 @@ export async function POST(req: Request) {
       )
     }
 
-    // Transform messages for DeepSeek/OpenAI compatible API
-    const formattedMessages = messages.map((m: { role: string; text: string }) => ({
-        role: m.role === 'AI' ? 'assistant' : m.role,
-        content: m.text,
-    }));
+    // Use the last user message as the question
+    const lastUserMessage = [...messages].reverse().find((m: any) => m.role === 'user')
+    if (!lastUserMessage) {
+      return NextResponse.json({ reply: 'No user message found' }, { status: 400 })
+    }
 
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    // Send question to FastAPI backend
+    const response = await fetch('http://localhost:8000/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: formattedMessages,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: lastUserMessage.text }),
     })
 
     const data = await response.json()
-    const reply =
-      data.choices?.[0]?.message?.content || 'No response from DeepSeek'
 
-    return NextResponse.json({ reply })
+    // Return answer and optionally sources
+    return NextResponse.json({
+      reply: data.answer,
+      sources: data.sources ?? [],
+    })
   } catch (err) {
     console.error('API error:', err)
     let errorMessage = 'An unknown error occurred'
-    if (err instanceof Error) {
-      errorMessage = err.message
-    }
+    if (err instanceof Error) errorMessage = err.message
     return NextResponse.json(
       { reply: '⚠️ Error getting response', error: errorMessage },
       { status: 500 }

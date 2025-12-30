@@ -11,6 +11,7 @@ const ArticleSchema = new Schema(
     geographic_region: String,
     relevance_score: Number,
     image: String,
+    full_text: String,
   },
   { timestamps: true }
 )
