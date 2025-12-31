@@ -1,0 +1,20 @@
+# Python
+venv
+__pycache__
+*.pyc
+*.pyo
+
+# Node
+node_modules
+
+# Environment / logs
+.env*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Chroma / temporary / test data
+chroma/
+rag_test/

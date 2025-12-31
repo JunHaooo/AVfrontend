@@ -1,0 +1,19 @@
+# Python
+venv
+__pycache__
+*.pyc
+*.pyo
+
+# Environment / logs
+*.env
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Chroma / temporary data
+chroma/
+rag_test/chroma/
+rag_test/data/
+rag_test/.env

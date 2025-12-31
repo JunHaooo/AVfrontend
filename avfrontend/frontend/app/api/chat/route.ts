@@ -1,9 +1,15 @@
 // app/api/chat/route.ts
 import { NextResponse } from 'next/server'
 
+// Define type for a message
+type Message = {
+  role: 'user' | 'assistant' | 'system'
+  text: string
+}
+
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json()
+    const { messages } = await req.json() as { messages: Message[] }
 
     if (!messages || messages.length === 0) {
       return NextResponse.json(
@@ -13,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     // Use the last user message as the question
-    const lastUserMessage = [...messages].reverse().find((m: any) => m.role === 'user')
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
     if (!lastUserMessage) {
       return NextResponse.json({ reply: 'No user message found' }, { status: 400 })
     }

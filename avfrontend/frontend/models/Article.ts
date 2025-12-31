@@ -3,7 +3,7 @@ import mongoose, { Schema, models, model } from "mongoose"
 const ArticleSchema = new Schema(
   {
     title: { type: String, required: true },
-    url: { type: String, required: true, unique: true },
+    url: { type: String, required: true, unique: true, index: true },
     snippet: String,
     source_domain: String,
     published_date: Date,
@@ -13,8 +13,11 @@ const ArticleSchema = new Schema(
     image: String,
     full_text: String,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 )
 
+// Prevent model overwrite errors in Next.js / hot reload / Docker
 export const Article =
-  models.Article || model("Article", ArticleSchema)
+  models.Article ?? model("Article", ArticleSchema)
