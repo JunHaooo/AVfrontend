@@ -19,6 +19,66 @@ AVFrontend is a full-stack web application featuring a **Next.js frontend** and 
 
 > ⚠️ The backend is intended for **local development and prototyping only** and is not production-ready.
 
+## Frontend–Backend Communication
+
+The application uses **Next.js API routes as an orchestration layer** between the client UI, external services, and a **Python FastAPI backend** responsible for retrieval-augmented generation (RAG) and vector ingestion. 
+
+### Client → Next.js API Routes
+
+All client-side interactions (article upload, preview, and chat) are routed through **Next.js API endpoints** under `app/api/*`. 
+
+---
+
+### Article Extraction & Preview (`POST /api/extract`)
+
+When a user submits a public article URL:
+
+1. The client calls `POST /api/extract`
+2. The API route uses **ScrapingBee** to fetch and render the page
+3. Article metadata and content are extracted server-side
+4. A structured preview (title, snippet, image, full text) is returned to the client
+
+This step allows users to validate content before ingestion.
+
+---
+
+### Article Persistence (`POST /api/articles`)
+
+After user confirmation:
+
+1. The client sends article data to `POST /api/articles`
+2. The API route stores or updates article metadata in **MongoDB**
+3. Articles are upserted by URL to prevent duplication
+
+MongoDB is used for **metadata storage and management**, separate from the vector database.
+
+---
+
+### FastAPI Ingestion & Vector Storage (`POST /articles`)
+
+For embedding generation and vector persistence:
+
+1. Article data is forwarded to the FastAPI backend
+2. FastAPI inserts the article into MongoDB
+3. The article content is ingested into **ChromaDB** via the ingestion pipeline
+4. Embeddings are stored for semantic retrieval
+
+All embedding logic and vector storage are handled by the Python backend.
+
+---
+
+### Chat & Retrieval (`POST /api/chat` → `POST /chat`)
+
+For question answering:
+
+1. The client sends conversation history to `POST /api/chat`
+2. The API route extracts the latest user query
+3. The query is forwarded to `POST /chat` on the FastAPI service
+4. FastAPI executes the RAG pipeline:
+   - retrieves relevant documents from ChromaDB
+   - generates a response using the retrieved context
+5. The answer and optional source metadata are returned to the client
+
 ---
 
 ## Features
